@@ -1,13 +1,16 @@
 {
-  "name": "unity-cloud-build-to-hockeyapp",
+  "name": "unity-cloud-build-to-appcenter",
   "version": "1.0.0",
-  "description": "Receives a payload from Unity Cloud Build webhook. Downloads the binary and posts to the HockeyApp API. Automating deployment from Unity Cloud Build to Hockeyapp.",
+  "description": "Receives a payload from Unity Cloud Build webhook. Downloads the binary and posts to the AppCenter API. Automating deployment from Unity Cloud Build to AppCenter.",
   "main": "index.js",
   "dependencies": {
+    "appcenter-cli": "^2.1.1",
     "dotenv": "^2.0.0",
-    "express": "^4.14.0",
-    "swagger-client": "^2.1.16",
-    "unitycloudbuild-client": "^0.1.6"
+    "express": "^4.17.1",
+    "https": "^1.0.0",
+    "najax": "^1.0.4",
+    "url": "^0.11.0",
+    "child_process": "^1.0.2"
   },
   "devDependencies": {},
   "scripts": {

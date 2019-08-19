@@ -46,6 +46,6 @@ Note; This is an initial release which is functional, but needs refactoring.
 
 ## Licenses
 
-Copyright 2016 Nathan Brodbent
+Copyright 2016 Nathan Broadbent
 
 This software is licensed under [Apache License 2.0](http://choosealicense.com/licenses/apache-2.0/).
