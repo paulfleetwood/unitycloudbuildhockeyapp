@@ -1,7 +1,7 @@
 // Initialise .env config.
 require('dotenv').config();
 
-let fs = require('fs');
+let fs = require('fs-extra');
 let https = require('https');
 let najax = require('najax');
 let url = require("url");
@@ -12,13 +12,25 @@ let child_process = require('child_process');
 var options = {
     unityAPIBase: "https://build-api.cloud.unity3d.com", // URI (e.g. href) received in web hook payload.
     unityCloudAPIKey: process.env.UNITYCLOUD_KEY,
-    appCenterKey: process.env.APPCENTER_API_TOKEN,
-    appCenterOwner: process.env.APP_CENTER_OWNER,
-    appCenterAppName: process.env.APP_CENTER_APPNAME,
     distributionMapping: JSON.parse(process.env.DISTRIB_MAP)
 };
 
 let processUcbWebhook = async function (event) {
+    let cacheDir = '/tmp/uploader/';
+    let modulesRoot = '/opt/nodejs/node_modules/';
+
+    // Make sure we are free of cruft
+    fs.exists(cacheDir, (doesExist) =>
+    {
+        if (doesExist)
+        {
+            fs.removeSync(cacheDir);
+        }
+
+        fs.ensureDirSync(cacheDir);
+    });
+
+
     let body = JSON.parse(event.body);
 
     // 1. Get Build API URL
@@ -33,23 +45,22 @@ let processUcbWebhook = async function (event) {
         return;
     }
 
-    let distributionGroup = options.distributionMapping[body.buildTargetName];
+    let distributionSettings = options.distributionMapping[body.buildTargetName];
+
+    options.appCenterKey = distributionSettings['appCenterKey'];
+    options.appCenterOwner = distributionSettings['appCenterOwner'];
+    options.appCenterAppName = distributionSettings['appCenterAppName'];
+    let distributionGroup = distributionSettings['distributionGroup'];
 
     let buildDetails = await getBuildDetails(buildAPIURL);
 
     let downloadUrl = buildDetails.links.download_primary.href;
     let parsed = url.parse(downloadUrl);
-    let filename = "/tmp/" + path.basename(parsed.pathname);
+    let filename = cacheDir + path.basename(parsed.pathname);
 
     let downloadedFile = downloadBinary(downloadUrl, filename);
 
-    let downloadDsymUrl = buildDetails.links.download_dsym.href;
-    let dsymParsed = url.parse(downloadDsymUrl);
-    let dsymFilename = "/tmp/" + path.basename(dsymParsed.pathname);
-
-    let downloadedDsymFile = downloadBinary(downloadDsymUrl, dsymFilename);
-
-    let execFile = './node_modules/.bin/appcenter';
+    let execFile = modulesRoot + '.bin/appcenter';
     let credentialsArgs = [
         "--token", options.appCenterKey,
         "--app", options.appCenterOwner + "/" + options.appCenterAppName];
@@ -64,6 +75,14 @@ let processUcbWebhook = async function (event) {
             "--release-notes", buildDetails.buildTargetName + " #" + buildDetails.build]
             .concat(credentialsArgs));
 
+    deleteFile(await downloadedFile);
+
+    let downloadDsymUrl = buildDetails.links.download_dsym.href;
+    let dsymParsed = url.parse(downloadDsymUrl);
+    let dsymFilename = cacheDir + path.basename(dsymParsed.pathname);
+
+    let downloadedDsymFile = downloadBinary(downloadDsymUrl, dsymFilename);
+
     console.log("Uploading symbol file " + await downloadedDsymFile);
 
     child_process.execFileSync(execFile,
@@ -71,7 +90,6 @@ let processUcbWebhook = async function (event) {
             "--symbol", await downloadedDsymFile]
             .concat(credentialsArgs));
 
-    deleteFile(downloadedFile);
     deleteFile(downloadedDsymFile);
 };
 

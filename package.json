@@ -10,7 +10,8 @@
     "https": "^1.0.0",
     "najax": "^1.0.4",
     "url": "^0.11.0",
-    "child_process": "^1.0.2"
+    "child_process": "^1.0.2",
+    "fs-extra": "^8.1.0"
   },
   "devDependencies": {},
   "scripts": {
